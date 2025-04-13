@@ -5,7 +5,7 @@ module.exports = (client) => {
         const eventFolders = fs.readdirSync(`./src/events`);
         for(const folder of eventFolders)
             {
-                const eventFiles = fs.readdirSync(`./src/event/${folder}`).filter(file => file.endsWith(".js"));
+                const eventFiles = fs.readdirSync(`./src/events/${folder}`).filter(file => file.endsWith(".js"));
                 switch(folder)
                 {
                     case "client":
