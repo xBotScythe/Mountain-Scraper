@@ -9,7 +9,7 @@ import json
 
 # gets datetime in format for stage attribute in POST request body
 def get_formatted_datetime():
-    eastern = pytz.timezone('US/Eastern')
+    eastern = pytz.timezone('America/New_York')
     now = datetime.now(eastern)
     gmt_offset = now.strftime('%z')
     long_tz_name = time.tzname[time.localtime().tm_isdst]
@@ -71,7 +71,7 @@ def scrape():
     payload = {
         "group": "BEV",  # or "All" or "FDS" depending on what you want
         "category": "all",
-        "brand": "[1015,1124,1025]", # code for Mtn Dew mainline
+        "brand": "[1015,1124,1025,1345]", # code for Mtn Dew mainline
         "state": "V" + get_formatted_datetime(),
         "page": 1,
         "perPage": 100
@@ -79,25 +79,28 @@ def scrape():
     }
 
     page_dict = {"results": []}
+    counter = 0
     # The page with product links and different size buttons
-    res = session.post(base_url, json=payload)
+    for x in range(1, 3):
+        payload["page"] = x
+        res = session.post(base_url, json=payload)
 
-    # Check if the request was successful
-    if res.ok:
-        try:
-            data = res.json()
-            counter = 0
-            for product in data.get("Products", []):
-                page_dict["results"].append({"name": product["Name"]})
-                page_dict["results"][counter].update({"link": "https://stage.pepsicoproductfacts.com/Home/Product?formula=" + product["FormulaSn"] + "&form=" + product["FormCd"] + "&size=" + str(product["SizeValue"])})
-                page_dict["results"][counter].update({"size": str(product["SizeValue"]) + product["SizeCode"]})
-                counter += 1
+        # Check if the request was successful
+        if res.ok:
+            try:
+                data = res.json()
+                for product in data.get("Products", []):
+                    page_dict["results"].append({"name": product["Name"]})
+                    page_dict["results"][counter].update({"link": "https://stage.pepsicoproductfacts.com/Home/Product?formula=" + product["FormulaSn"] + "&form=" + product["FormCd"] + "&size=" + str(product["SizeValue"])})
+                    page_dict["results"][counter].update({"size": str(product["SizeValue"]) + product["SizeCode"]})
+                    page_dict["results"][counter].update({'id': str(product["ProductId"])})
+                    counter += 1
 
-        except ValueError:
-            print("Could not decode JSON. Response content:")
-            print(res.text)
-    else:
-        print("Request failed with status code:", res.status_code)
+            except ValueError:
+                print("Could not decode JSON. Response content:")
+                print(res.text)
+        else:
+            print("Request failed with status code:", res.status_code)
 
     previous_pdf_img_links = [] 
     keylist = ["name", "images", "last_updated"]
@@ -122,7 +125,7 @@ def scrape():
             if(href in previous_pdf_img_links):
                 continue
             if href.endswith('.pdf'):
-                all_pdf_links.append(href)
+                all_pdf_links.append({"link": href, "size":f"{result["size"]}"})
                 previous_pdf_img_links.append(href)
             elif href.endswith('.jpg') or href.endswith('.png'):
                 all_image_links.append({"link": href, "size":f"{result["size"]}"})
@@ -155,10 +158,10 @@ def scrape():
                     continue
                 sublink = sublink['href']  
                 if sublink.endswith('.pdf'):
-                    all_pdf_links.append({"link": sublink, "size":f"{href[-2:]}"})
+                    all_pdf_links.append({"link": sublink, "size":f"{re.search(r"size=(\d+)", href).group(1)}oz"})
                     previous_pdf_img_links.append(sublink)
                 elif sublink.endswith('.jpg') or sublink.endswith('.png'):
-                    all_image_links.append({"link": sublink, "size":f"{href[-2:]}"})
+                    all_image_links.append({"link": sublink, "size":f"{re.search(r"size=(\d+)", href).group(1)}oz"})
                     previous_pdf_img_links.append(sublink)
 
         page_dict["results"][result_count]["images"] = all_image_links
@@ -167,10 +170,12 @@ def scrape():
     
     return page_dict
 
-# def imgScrapeToJSON(page_dict:dict, previous_links:list):
-#     for product in page_dict["results"]:
-#         if(product["img"] in previous_links):
-#             product[
+def imgScrapeToJSON(page_dict:dict):
+    if(os.path.exists("mountain_dew/products.json")):
+        print("products exists, setting old one to old...")
+        os.replace("mountain_dew/products.json", "mountain_dew/products_old.json")
+    with open("mountain_dew/products.json", "w") as file:
+        json.dump(page_dict, file, indent=4)
        
 
 
@@ -178,22 +183,22 @@ def scrape():
 
 def main():
     page_dict = scrape()
-    previous_links = []
-    for result in page_dict["results"]:
-        for link in result["images"]:        
-            if(link["link"] in previous_links):
-                continue
-            download_file(link["link"], "mountain_dew/images", filename=f"{result["name"]} {link["size"]}")
-            previous_links.append(link)
-        # for pLink in result["pdfs"]:
-        #     if(pLink[] in previous_links):
-        #         continue
-        #     download_file(pLink["link"], "mountain_dew/pdfs", filename=f"{result["name"]} {pLink["size"]}")   
-        #     previous_links.append(pLink)
+    imgScrapeToJSON(page_dict)
 
+    # previous_links = []
+    # for result in page_dict["results"]:
+    #     for link in result["images"]:        
+    #         if(link in previous_links):
+    #             continue
+    #         download_file(link["link"], "mountain_dew/images", filename=f"{result["name"]} {link["size"]}")
+    #         previous_links.append(link)
+    #     for pLink in result["pdfs"]:
+    #         if(pLink in previous_links):
+    #             continue
+    #         download_file(pLink["link"], "mountain_dew/pdfs", filename=f"{result["name"]} {pLink["size"]}")   
+    #         previous_links.append(pLink)
 
 main()
-
 
                 
 

@@ -11,9 +11,22 @@
   "description": "",
   "dependencies": {
     "@discordjs/rest": "^2.4.3",
+    "@vibrant/core": "^4.0.0",
+    "@vibrant/image": "^4.0.0",
+    "axios": "^1.8.4",
+    "canvas": "^3.1.0",
     "chalk": "^4.1.2",
     "discord-api-types": "^0.37.120",
     "discord.js": "^14.18.0",
-    "dotenv": "^16.5.0"
+    "dotenv": "^16.5.0",
+    "fetch": "^1.1.0",
+    "forever": "^4.0.3",
+    "get-image-colors": "^4.0.1",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2",
+    "node-vibrant": "^4.0.3",
+    "pdf-image": "^2.0.0",
+    "pdf-poppler": "^0.2.1",
+    "pdf-to-png-converter": "^3.6.5"
   }
 }

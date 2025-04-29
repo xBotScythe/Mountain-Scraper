@@ -1,14 +1,20 @@
 const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9')
+const { Routes } = require('discord-api-types/v9');
+const path = require('path');
 const fs = require('fs');
+
 
 module.exports = (client) => {
     client.handleCommands = async() => {
         const commandFolders = fs.readdirSync('./src/commands');
         for(const folder of commandFolders)
         {
-            const commandFiles = fs.readdirSync(`./src/commands/${folder}`).filter((file) => file.endsWith(".js"));
-
+            const files = fs.readdirSync(`./src/commands/${folder}`);
+            const commandFiles = files.filter(file => {
+                const ext = path.extname(file);
+                return ext === '.js' || ext === '.cjs';
+              });
+              
             const { commands, commandArray } = client;
             for(const file of commandFiles)
             {
